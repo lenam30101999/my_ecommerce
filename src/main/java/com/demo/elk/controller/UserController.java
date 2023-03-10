@@ -4,6 +4,8 @@ import com.demo.elk.dto.userDTO.CreditCardDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController extends BaseController{
@@ -12,6 +14,18 @@ public class UserController extends BaseController{
     @GetMapping
     public ResponseEntity<?> getUserById(@RequestHeader("Authorization") String header){
         return userService.findUserById(header);
+    }
+
+    @CrossOrigin(origins = "*")
+    @GetMapping(path = "/all")
+    public ResponseEntity<?> getAllUser(@RequestBody List<Integer> userIds){
+        return userService.findAllUser(userIds);
+    }
+
+    @CrossOrigin(origins = "*")
+    @GetMapping(params = "name")
+    public ResponseEntity<?> getAllUser(@RequestParam("name") String name){
+        return userService.findAllUserByFullNameLike(name);
     }
 
     @CrossOrigin(origins = "*")

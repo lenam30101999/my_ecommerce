@@ -1,5 +1,7 @@
 package com.demo.elk.dto.authentication;
 
+import com.demo.elk.annotation.HasText;
+import com.demo.elk.annotation.ValidateUsername;
 import com.demo.elk.util.ToLowerCaseDeserializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -12,13 +14,15 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.List;
-import java.util.Set;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class SignUpRequestDTO {
+
+    @HasText(message = "Required to input!")
+    @ValidateUsername(message = "Wrong format!")
     @NotNull
     @Size(min = 6, max = 20, message = "Username is from 6 to 20 characters!")
     @JsonDeserialize(using = ToLowerCaseDeserializer.class)

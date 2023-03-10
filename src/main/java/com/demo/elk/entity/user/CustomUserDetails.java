@@ -1,5 +1,6 @@
 package com.demo.elk.entity.user;
 
+import com.demo.elk.entity.role.Role;
 import com.demo.elk.entity.types.UserRole;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -86,7 +87,7 @@ public class CustomUserDetails implements UserDetails {
     public static CustomUserDetails create(User user) {
         List<SimpleGrantedAuthority> authorities =
                 user.getRoles().stream().map(role -> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
-        Set<String> roleNames = user.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet());
+        Set<String> roleNames = user.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
 
         return new CustomUserDetails(
                 user.getId(),

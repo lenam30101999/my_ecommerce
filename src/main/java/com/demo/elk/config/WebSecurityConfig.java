@@ -19,6 +19,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
+    private static final String[] PERMIT_ALL = { "/api/v1/authentications/**" };
+
     @Autowired
     private AuthService authService;
 
@@ -52,7 +54,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .cors()
-                .and()
+                .disable()
                 .csrf()
                 .disable()
                 .exceptionHandling()
@@ -62,7 +64,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
-                .antMatchers(returnListApiPermitAll())
+                .antMatchers(PERMIT_ALL)
                 .permitAll()
                 .antMatchers("/api/v1/roles/**")
                 .access("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
@@ -72,10 +74,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authenticated();
 
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-    }
-
-    private String[] returnListApiPermitAll(){
-        return new String[]{"/api/v1/authentications/**"};
     }
 
 }

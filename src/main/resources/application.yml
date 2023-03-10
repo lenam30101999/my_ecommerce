@@ -40,7 +40,6 @@ spring:
 elasticsearch:
   host: ${ELASTICSEARCH_HOST}
   port: ${ELASTICSEARCH_PORT}
-  clustername: ${CLUSTER_NAME}
 twilio:
   account_sid: ${TWILIO_ACCOUNT_SID}
   auth_token: ${TWILIO_AUTH_TOKEN}
@@ -54,3 +53,4 @@ time:
   refresh-token: ${TIME_REFRESH_TOKEN}
   register: ${EXPIRE_TIME_REGISTER}
   forgot-password: ${EXPIRE_TIME_FORGOT_PASSWORD}
+

@@ -1,10 +1,13 @@
 package com.demo.elk.controller;
 
 import com.demo.elk.dto.authentication.*;
+import com.demo.elk.exception.ErrorException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.IOException;
 
@@ -14,12 +17,15 @@ import java.io.IOException;
 public class AuthenticationController extends BaseController {
 
     @PostMapping(path = "/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequestDTO signUpRequestDTO) {
-        return authService.register(signUpRequestDTO);
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequestDTO signUpRequestDTO, HttpServletRequest request) throws ErrorException {
+        return authService.register(signUpRequestDTO, request);
     }
 
     @PostMapping(path = "/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequestDTO loginRequestDTO) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequestDTO loginRequestDTO,
+                                              HttpServletRequest httpServletRequest) {
+        loginRequestDTO.setRemoteAddress(httpServletRequest.getRemoteAddr());
+
         return authService.login(loginRequestDTO);
     }
 

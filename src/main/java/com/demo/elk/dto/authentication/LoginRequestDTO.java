@@ -1,5 +1,6 @@
 package com.demo.elk.dto.authentication;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,4 +17,7 @@ public class LoginRequestDTO {
 
     @JsonProperty("password")
     private String password;
+
+    @JsonIgnore
+    private String remoteAddress;
 }

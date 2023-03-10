@@ -21,6 +21,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -30,17 +31,17 @@ import java.util.Objects;
 public class AuthServiceImpl extends BaseService implements AuthService {
 
     @Override
-    public ResponseEntity<?> register(SignUpRequestDTO signUpRequestDTO) {
+    public ResponseEntity<?> register(SignUpRequestDTO signUpRequestDTO, HttpServletRequest request) {
         checkUser(signUpRequestDTO);
-        saveUserAndSendRegister(signUpRequestDTO, false);
+        saveUserAndSendRegister(signUpRequestDTO, false, request);
         ResponseDTO response = new ResponseDTO(MessageResponse.REGISTER_SUCCESS, HttpStatus.OK.value());
         return ResponseEntity.ok(response);
     }
 
     @Override
-    public ResponseEntity<?> createAccount(SignUpRequestDTO signUpRequestDTO) {
+    public ResponseEntity<?> createAccount(SignUpRequestDTO signUpRequestDTO, HttpServletRequest request) {
         checkUser(signUpRequestDTO);
-        saveUserAndSendRegister(signUpRequestDTO, true);
+        saveUserAndSendRegister(signUpRequestDTO, true, request);
         ResponseDTO response = new ResponseDTO(MessageResponse.REGISTER_SUCCESS, HttpStatus.OK.value());
         return ResponseEntity.ok(response);
     }
@@ -54,8 +55,16 @@ public class AuthServiceImpl extends BaseService implements AuthService {
             LoginResponseDTO loginResponse = getLoginResponse(loginRequestDTO, user);
             String cacheKey = CacheKey.genRefreshKey(user.getId());
             cacheHandle.set(cacheKey, loginResponse.getRefreshToken(), expiryTimeRefreshToken);
+
+            user.setLoginFailure(0);
+            user.setRemoteAddress(loginRequestDTO.getRemoteAddress());
+            userRepository.saveAndFlush(user);
+
             response = new ResponseDTO(loginResponse, BLANK_CHARACTER, HttpStatus.OK.value(), BLANK_CHARACTER);
         } catch (Exception e) {
+            user.setLoginFailure(user.getLoginFailure() + 1);
+            userRepository.save(user);
+
             throw new ErrorException(MessageResponse.PASSWORD_DIFFERENT);
         }
         return ResponseEntity.ok(response);
@@ -161,15 +170,16 @@ public class AuthServiceImpl extends BaseService implements AuthService {
         return CustomUserDetails.create(user);
     }
 
-    public void saveUserAndSendRegister(SignUpRequestDTO signUpRequestDTO, boolean isAdmin) {
+    public void saveUserAndSendRegister(SignUpRequestDTO signUpRequestDTO, boolean isAdmin, HttpServletRequest request) {
         try {
-            User saved = assignUserDTOToUser(signUpRequestDTO, isAdmin);
+            User saved = assignUserDTOToUser(signUpRequestDTO, isAdmin, request);
             saved = userRepository.save(saved);
             if (!isAdmin) {
                 String username = getPhoneNoOrEmailFromSignUpRequest(saved, signUpRequestDTO.getOption());
                 sendOtpToUser(username, OtpType.REGISTER);
             }
         } catch (Exception e) {
+            log.error("Error: {}", e.getMessage(), e);
             throw new ErrorException(e.getMessage());
         }
     }

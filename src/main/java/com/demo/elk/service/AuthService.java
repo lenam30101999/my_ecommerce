@@ -5,12 +5,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
 public interface AuthService extends UserDetailsService {
-    ResponseEntity<?> register(SignUpRequestDTO signUpRequestDTO);
+    ResponseEntity<?> register(SignUpRequestDTO signUpRequestDTO, HttpServletRequest request);
 
-    ResponseEntity<?> createAccount(SignUpRequestDTO signUpRequestDTO);
+    ResponseEntity<?> createAccount(SignUpRequestDTO signUpRequestDTO, HttpServletRequest request);
 
     ResponseEntity<?> login(LoginRequestDTO loginRequestDTO);
 

@@ -30,7 +30,7 @@ public class Helper {
         if (phoneNumber == null) {
             return false;
         }
-        String regex = "^0[37859]{1}[0-9]{1}\\d{7}$";
+        String regex = "^0[37859][0-9]\\d{7}$";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(phoneNumber);
         return matcher.find();

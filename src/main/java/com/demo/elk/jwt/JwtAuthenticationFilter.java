@@ -1,15 +1,13 @@
 package com.demo.elk.jwt;
 
-import com.demo.elk.exception.ErrorException;
-import com.demo.elk.exception.JwtTokenException;
-import com.demo.elk.exception.MessageResponse;
 import com.demo.elk.service.AuthService;
-import io.jsonwebtoken.JwtException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.security.MD5Encoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -29,8 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private AuthService authService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
@@ -38,7 +35,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 int id = tokenProvider.getIdFromSubjectJWT(jwt);
                 UserDetails userDetails = authService.loadUserById(id);
-                if(userDetails != null) {
+
+                if (userDetails != null) {
                     UsernamePasswordAuthenticationToken
                             authentication = new UsernamePasswordAuthenticationToken(userDetails,
                             null, userDetails.getAuthorities());

@@ -6,6 +6,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 @Log4j2
@@ -14,8 +15,8 @@ import javax.validation.Valid;
 public class AdminController extends BaseController {
 
     @PostMapping(path = "/create-account")
-    public ResponseEntity<?> createAccount(@Valid @RequestBody SignUpRequestDTO signUpRequestDTO) {
-        return authService.createAccount(signUpRequestDTO);
+    public ResponseEntity<?> createAccount(@Valid @RequestBody SignUpRequestDTO signUpRequestDTO, HttpServletRequest request) {
+        return authService.createAccount(signUpRequestDTO, request);
     }
 
     @PutMapping(path = "/account-state")
@@ -23,4 +24,8 @@ public class AdminController extends BaseController {
         return userService.editStateAccount(accountStateDTO);
     }
 
+    @DeleteMapping(path = "/delete-account/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable("id") int userId) {
+        return userService.deleteAccount(userId);
+    }
 }

@@ -4,6 +4,8 @@ import com.demo.elk.dto.userDTO.AccountStateDTO;
 import com.demo.elk.dto.userDTO.CreditCardDTO;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
+
 public interface UserService {
 
     ResponseEntity<?> findUserById(String header);
@@ -18,4 +20,9 @@ public interface UserService {
 
     ResponseEntity<?> editStateAccount(AccountStateDTO accountStateDTO);
 
+    ResponseEntity<?> findAllUser(List<Integer> userIds);
+
+    ResponseEntity<?> findAllUserByFullNameLike(String name);
+
+    ResponseEntity<?> deleteAccount(int userId);
 }

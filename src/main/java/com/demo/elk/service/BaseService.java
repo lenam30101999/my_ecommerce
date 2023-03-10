@@ -17,6 +17,7 @@ import com.demo.elk.exception.ErrorException;
 import com.demo.elk.exception.MessageResponse;
 import com.demo.elk.jwt.JwtTokenProvider;
 import com.demo.elk.mapper.ModelMapper;
+import com.demo.elk.repository.elasticsearch.UserElasticsearchRepository;
 import com.demo.elk.repository.jpa.*;
 import com.demo.elk.service.impl.OtpService;
 import com.demo.elk.util.CacheHandle;
@@ -30,47 +31,61 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Log4j2
 public class BaseService {
-    @Autowired protected UserRepository userRepository;
-//    @Autowired protected UserElasticsearchRepository userElasticsearchRepository;
-    @Autowired protected ShopRepository shopRepository;
-    @Autowired protected AddOnDealInfoRepository addOnDealInfoRepository;
-    @Autowired protected ItemBasicRepository itemBasicRepository;
-    @Autowired protected ItemRepository itemRepository;
-    @Autowired protected OptionRepository optionRepository;
-    @Autowired protected TierVariationRepository tierVariationRepository;
-    @Autowired protected VoucherRepository voucherRepository;
-    @Autowired protected ModelMapper modelMapper;
-    @Autowired protected JwtTokenProvider tokenProvider;
-    @Autowired protected PasswordEncoder passwordEncoder;
-    @Autowired protected AuthenticationManager authenticationManager;
-    @Autowired protected OtpService otpService;
-    @Autowired protected CacheHandle cacheHandle;
-    @Autowired protected JavaMailSender javaMailSender;
-    @Autowired protected IRoleRepository iRoleRepository;
-    @Autowired protected ICreditCardRepository iCreditCardRepository;
-
+    protected static final String BLANK_CHARACTER = "";
+    @Autowired
+    protected UserRepository userRepository;
+    @Autowired
+    protected UserElasticsearchRepository userElasticsearchRepository;
+    @Autowired
+    protected ShopRepository shopRepository;
+    @Autowired
+    protected AddOnDealInfoRepository addOnDealInfoRepository;
+    @Autowired
+    protected ItemBasicRepository itemBasicRepository;
+    @Autowired
+    protected ItemRepository itemRepository;
+    @Autowired
+    protected OptionRepository optionRepository;
+    @Autowired
+    protected TierVariationRepository tierVariationRepository;
+    @Autowired
+    protected VoucherRepository voucherRepository;
+    @Autowired
+    protected ModelMapper modelMapper;
+    @Autowired
+    protected JwtTokenProvider tokenProvider;
+    @Autowired
+    protected PasswordEncoder passwordEncoder;
+    @Autowired
+    protected AuthenticationManager authenticationManager;
+    @Autowired
+    protected OtpService otpService;
+    @Autowired
+    protected CacheHandle cacheHandle;
+    @Autowired
+    protected JavaMailSender javaMailSender;
+    @Autowired
+    protected IRoleRepository iRoleRepository;
+    @Autowired
+    protected ICreditCardRepository iCreditCardRepository;
     @Value("${app.jwtSecret.token}")
     protected String secretKey;
-
     @Value(("${time.register}"))
     protected int expiryTimeRegister;
-
     @Value(("${time.forgot-password}"))
     protected int expiryTimeForgot;
-
     @Value("${time.refresh-token}")
     protected int expiryTimeRefreshToken;
 
-    protected static final String BLANK_CHARACTER = "";
-
-    protected User assignUserDTOToUser(SignUpRequestDTO signUpRequestDTO, boolean isAdmin) {
+    protected User assignUserDTOToUser(SignUpRequestDTO signUpRequestDTO, boolean isAdmin, HttpServletRequest request) {
         State state = isAdmin ? State.ACTIVE : State.NONACTIVE;
         return User.builder()
                 .username(signUpRequestDTO.getUsername())
@@ -81,12 +96,14 @@ public class BaseService {
                 .uid(Helper.generateUid())
                 .roles(assignNameRoleToObject(signUpRequestDTO.getRoles(), isAdmin))
                 .state(state)
+                .loginFailure(0)
+                .remoteAddress(request.getRemoteAddr())
                 .build();
     }
 
-    protected void saveShop(ShopDTO shopDTO){
+    protected void saveShop(ShopDTO shopDTO) {
         try {
-            if (Objects.nonNull(shopDTO)){
+            if (Objects.nonNull(shopDTO)) {
                 Shop shop = Shop.builder()
                         .algorithm(shopDTO.getAlgorithm())
                         .totalCount(shopDTO.getTotalCount())
@@ -96,32 +113,32 @@ public class BaseService {
                 saved.setId(shop.getId());
                 shopDTO.getItems().forEach(itemDTO -> saveItem(itemDTO, saved));
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             log.info(e);
         }
     }
 
-    protected void saveItem(ItemDTO itemDTO, Shop shop){
+    protected void saveItem(ItemDTO itemDTO, Shop shop) {
         Item item;
         try {
             ItemBasic itemBasic = saveItemBasic(itemDTO.getItemBasicDTO());
-            if (Objects.nonNull(itemBasic)){
+            if (Objects.nonNull(itemBasic)) {
                 item = Item.builder()
                         .itemBasic(itemBasic)
                         .shop(shop)
                         .build();
                 itemRepository.save(item);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             log.info(e);
         }
     }
 
-    protected ItemBasic saveItemBasic(ItemBasicDTO itemBasicDTO){
+    protected ItemBasic saveItemBasic(ItemBasicDTO itemBasicDTO) {
         ItemBasic itemBasic = null;
         try {
             ItemBasic existingItemBasic = itemBasicRepository.findItemBasicByItemId(itemBasicDTO.getItemId()).orElse(null);
-            if (Objects.isNull(existingItemBasic)){
+            if (Objects.isNull(existingItemBasic)) {
                 itemBasic = ItemBasic.builder()
                         .name(itemBasicDTO.getName())
                         .itemId(itemBasicDTO.getItemId())
@@ -151,7 +168,7 @@ public class BaseService {
                         .build();
                 return itemBasicRepository.save(itemBasic);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             log.info(e);
         }
         return itemBasic;
@@ -165,7 +182,7 @@ public class BaseService {
         return null;
     }
 
-    protected String encodePassword(String password){
+    protected String encodePassword(String password) {
         return passwordEncoder.encode(password);
     }
 
@@ -185,13 +202,17 @@ public class BaseService {
 
     protected Set<Role> assignNameRoleToObject(List<String> roleNames, boolean isAdmin) {
         List<Role> roles;
-        if (isAdmin) {
-            roles = iRoleRepository.findAllByNames(roleNames)
-                    .orElseThrow(() -> new ErrorException(MessageResponse.ROLE_IS_NOT_VALID));
-        }else {
-            Role role = iRoleRepository.findByName(UserRole.ROLE_USER.name()).get();
-            roles = List.of(role);
+        if (CollectionUtils.isEmpty(roleNames)) {
+            roleNames = new ArrayList<>();
         }
+        if (isAdmin) {
+            roleNames.add(UserRole.ROLE_ADMIN.name());
+        }
+        if (CollectionUtils.isEmpty(roleNames)) {
+            roleNames.add(UserRole.ROLE_USER.name());
+        }
+        roles = iRoleRepository.findAllByNames(roleNames)
+                .orElseThrow(() -> new ErrorException(MessageResponse.ROLE_IS_NOT_VALID));
         return new HashSet<>(roles);
     }
 

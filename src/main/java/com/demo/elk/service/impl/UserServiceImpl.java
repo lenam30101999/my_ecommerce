@@ -1,24 +1,27 @@
 package com.demo.elk.service.impl;
 
+import com.demo.elk.dto.ResponseDTO;
 import com.demo.elk.dto.userDTO.AccountStateDTO;
 import com.demo.elk.dto.userDTO.CreditCardDTO;
-import com.demo.elk.dto.ResponseDTO;
 import com.demo.elk.dto.userDTO.UserDTO;
 import com.demo.elk.entity.types.BankName;
 import com.demo.elk.entity.types.CreditType;
 import com.demo.elk.entity.types.State;
 import com.demo.elk.entity.user.CreditCard;
 import com.demo.elk.entity.user.User;
+import com.demo.elk.entity.user.UserElasticsearch;
 import com.demo.elk.exception.ErrorException;
 import com.demo.elk.exception.MessageResponse;
 import com.demo.elk.service.BaseService;
 import com.demo.elk.service.UserService;
+import com.demo.elk.util.MessageUtils;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -105,12 +108,31 @@ public class UserServiceImpl extends BaseService implements UserService {
 
         if (state == State.ACTIVE) {
             user.setState(State.ACTIVE);
-        }else if (state == State.BLOCKED) {
+        } else if (state == State.BLOCKED) {
             user.setState(State.BLOCKED);
         }
 
         userRepository.saveAndFlush(user);
         return ResponseEntity.ok(new ResponseDTO(MessageResponse.UPDATE_SUCCESS, HttpStatus.OK));
+    }
+
+    @Override
+    public ResponseEntity<?> findAllUser(List<Integer> userIds) {
+        List<User> users = userRepository.findUser(userIds);
+        List<UserDTO> userDTOS = users.stream().map(modelMapper::convertUserToDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(userDTOS);
+    }
+
+    @Override
+    public ResponseEntity<?> findAllUserByFullNameLike(String name) {
+        List<UserElasticsearch> users = userElasticsearchRepository.findFuzzyByFullName(name);
+        return ResponseEntity.ok(users);
+    }
+
+    @Override
+    public ResponseEntity<?> deleteAccount(int userId) {
+        userRepository.deleteById(userId);
+        return ResponseEntity.ok(MessageUtils.MSG_DELETE_SUCCESS);
     }
 
     private void checkCreditCardExisted(String creditCardNumber, int userId) {
@@ -131,11 +153,9 @@ public class UserServiceImpl extends BaseService implements UserService {
     }
 
     private CreditType getCreditType(String creditType) {
-        for (CreditType type : CreditType.values()) {
-            if (type.name().equalsIgnoreCase(creditType)) {
-                return type;
-            }
-        }
-        throw new ErrorException(MessageResponse.WRONG_CREDIT_CARD_TYPE);
+        return Arrays.stream(CreditType.values())
+                .filter(type -> type.name().equalsIgnoreCase(creditType))
+                .findFirst()
+                .orElseThrow(() -> new ErrorException(MessageResponse.WRONG_CREDIT_CARD_TYPE));
     }
 }

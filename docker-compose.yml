@@ -1,25 +1,44 @@
 version: '3.7'
 
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
-    volumes:
-      - type: bind
-        source: ./elk_config/elasticsearch/config/elasticsearch.yml
-        target: /usr/share/elasticsearch/config/elasticsearch.yml
-      - type: volume
-        source: elasticsearch
-        target: /usr/share/elasticsearch/data
-    environment:
-      discovery.type: single-node
+  mysql:
+    image: mysql:8.0.32
+    container_name: mysql
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - 3360:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_DATABASE=test_backend
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=admin
+    volumes:
+      - mysql_data:/var/lib/mysql
     networks:
       - elknetwork
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.3
+    container_name: elasticsearch
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+
   logstash:
-    image: docker.elastic.co/logstash/logstash:7.15.0
+    image: docker.elastic.co/logstash/logstash:7.17.3
     volumes:
       - type: bind
         source: ./elk_config/logstash/config/logstash.yml
@@ -31,12 +50,12 @@ services:
         read_only: true
       - type: bind
         source: ./elk_config/driver/mysql/
-        target: /opt/elasticSearch/logstash-7.15.0/lib/mysqljars/
+        target: /opt/elasticSearch/logstash-7.17.3/lib/mysqljars/
         read_only: false
     ports:
       - "5044:5044"
-      - "5000:5000/tcp"
-      - "5000:5000/udp"
+      - "5001:5001/tcp"
+      - "5001:5001/udp"
       - "9600:9600"
     depends_on:
       - elasticsearch
@@ -44,21 +63,19 @@ services:
       - elknetwork
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.15.0
-    volumes:
-      - type: bind
-        source: ./elk_config/kibana/config/kibana.yml
-        target: /usr/share/kibana/config/kibana.yml
-        read_only: true
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:7.17.3
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
-      - "5601:5601"
+      - 5601:5601
     depends_on:
       - elasticsearch
-    networks:
-      - elknetwork
 
 networks:
   elknetwork:
     driver: bridge
 volumes:
-  elasticsearch:
+  elasticsearch-data:
+    driver: local
+  mysql_data:

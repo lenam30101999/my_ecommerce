@@ -47,6 +47,12 @@ public class User implements Serializable {
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
+    @Column(name = "login_failure", columnDefinition = "0", nullable = false)
+    private Integer loginFailure;
+
+    @Column(name = "remote_address", columnDefinition = "0.0.0.0", nullable = false)
+    private String remoteAddress;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "users_roles",
             joinColumns = {@JoinColumn(name = "user_id")},

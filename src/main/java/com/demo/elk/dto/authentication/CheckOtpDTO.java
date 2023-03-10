@@ -1,6 +1,6 @@
 package com.demo.elk.dto.authentication;
 
-import com.demo.elk.annotation.UsernameConstraint;
+import com.demo.elk.annotation.ValidateUsername;
 import com.demo.elk.util.ToLowerCaseDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
@@ -12,7 +12,7 @@ import javax.validation.constraints.Size;
 public class CheckOtpDTO {
     @NotNull
     @Size(min = 6, max = 50)
-    @UsernameConstraint
+    @ValidateUsername
     @JsonDeserialize(using = ToLowerCaseDeserializer.class)
     private String username;
 
